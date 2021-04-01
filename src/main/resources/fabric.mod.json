@@ -1,27 +1,28 @@
 {
   "schemaVersion": 1,
-  "id": "bpvp",
+  "id": "cottonweaver",
   "version": "${version}",
-  "name": "BPvP",
+  "name": "CottonWeaver",
   "description": "",
   "authors": [
     "UltraBlackLinux"
   ],
   "contact": {},
   "license": "GPL-3.0",
-  "icon": "assets/BPvP/icon.png",
+  "icon": "assets/cottonweaver/icon.png",
   "environment": "client",
   "entrypoints": {
     "main": [
-      "me.ultrablacklinux.bpvp.BPvP"
+      "me.ultrablacklinux.cottonweaver.CottonWeaver"
     ]
   },
   "mixins": [
-    "BPvP.mixins.json"
+    "cottonweaver.mixins.json"
   ],
   "depends": {
     "fabricloader": ">=0.11.3",
     "fabric": "*",
-    "minecraft": "1.16.5"
+    "minecraft": "*",
+    "cloth-config2": ">=4.10.6"
   }
 }

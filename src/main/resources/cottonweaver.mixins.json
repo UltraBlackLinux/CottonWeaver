@@ -1,7 +1,7 @@
 {
   "required": true,
   "minVersion": "0.8",
-  "package": "me.ultrablacklinux.bpvp.mixin",
+  "package": "me.ultrablacklinux.cottonweaver.mixin",
   "compatibilityLevel": "JAVA_8",
   "mixins": [
   ],
