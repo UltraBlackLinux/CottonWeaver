@@ -1,13 +1,11 @@
 package me.ultrablacklinux.cottonweaver;
 
-import com.mojang.brigadier.suggestion.SuggestionProvider;
-import io.netty.handler.codec.http.HttpServerKeepAliveHandler;
 import me.ultrablacklinux.cottonweaver.command.CottonWeaverCommand;
 import me.ultrablacklinux.cottonweaver.config.Config;
 import me.ultrablacklinux.cottonweaver.modules.movement.Fly;
+import me.ultrablacklinux.cottonweaver.modules.player.NoFall;
 import me.ultrablacklinux.cottonweaver.modules.util.Util;
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.client.command.v1.FabricClientCommandSource;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 
@@ -32,6 +30,7 @@ public class CottonWeaver implements ModInitializer  {
         CottonWeaverCommand.registerCommands();
 
         modules.put(Fly.class, false);
+        modules.put(NoFall.class, false);
 
         configs = Config.get().settings.configs;
 
@@ -57,6 +56,9 @@ public class CottonWeaver implements ModInitializer  {
                 return CompletableFuture.completedFuture(builder.build());  //
             };                                                              //
 
+            if (Util.configReset("e").keySet() != (CottonWeaver.configs.get(CottonWeaver.currentConfig).keySet())) {
+                Util.configReset("e").forEach((k, v) -> CottonWeaver.configs.get(CottonWeaver.currentConfig).putIfAbsent(k, v));
+            }
             modules.forEach((k, v) -> {
                 Util.moduleRunner(k, "preRun", null, null);
                 Util.moduleUpdateMessage(k, v);

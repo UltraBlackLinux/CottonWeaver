@@ -9,6 +9,7 @@ import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -17,42 +18,42 @@ public class Fly implements Module {
     public static KeyBinding keyBinding;
     public static boolean isActive;
     MinecraftClient client = MinecraftClient.getInstance();
-    static boolean canRun;
+    static boolean threadDead;
 
     @Override
     public void init() {
         keyBinding = Util.keyBindingHelper(true, GLFW.GLFW_KEY_F, moduleName);
-        canRun = true;
+        threadDead = true;
     }
 
     @Override
     public void preRun() {
-        boolean canThisRun;
-        if (!CottonWeaver.moduleManualOverride.contains(moduleName)) canThisRun = keyBinding.isPressed();
+        boolean activated;
+        if (!CottonWeaver.moduleManualOverride.contains(moduleName)) activated = keyBinding.isPressed();
         else {
-            canThisRun = CottonWeaver.moduleManualOverride.contains(moduleName);
+            activated = CottonWeaver.moduleManualOverride.contains(moduleName);
             if (keyBinding.isPressed()) CottonWeaver.moduleManualOverride.remove(moduleName);
         }
 
+        if (client.player != null && !client.player.isCreative() && client.player.abilities.flying) {
+            client.player.abilities.flying = false;
+            client.player.abilities.allowFlying = false;
+        }
 
-        if (canThisRun && client.player != null) {
+        if (activated && client.player != null) {
             isActive = true;
             Thread runner = new Thread(this::run);
-            if (canRun) runner.start();
+            if (threadDead) runner.start();
         }
-        else if (!canThisRun && client.player != null) {
-            if (!client.player.isCreative()) {
-                client.player.abilities.flying = false;
-                client.player.abilities.allowFlying = false;
-            }
+        else if (!activated) {
             isActive = false;
         }
     }
 
     @Override
     public void run() {
-        canRun = false;
-        switch (CottonWeaver.configs.get(CottonWeaver.currentConfig).get("flightMode")) {
+        threadDead = false;
+        switch (Util.getCurrentConfigEntry("flightMode")) {
             case "JetPack":
                 client.player.setOnGround(true);
                 client.player.jump();
@@ -60,16 +61,23 @@ public class Fly implements Module {
                     TimeUnit.MILLISECONDS.sleep(Integer.parseInt(CottonWeaver.configs.get(CottonWeaver.currentConfig)
                             .get("JetPackCooldown")));
                 } catch (Exception ignore) {}
-            case "WalkFly":
+                break;
+            case "AirJump":
                 client.player.setOnGround(true);
+                break;
 
             case "VanillaFly":
-                client.player.abilities.allowFlying = true;
-                client.player.abilities.flying = true;
-                client.player.abilities.setFlySpeed(Float.parseFloat(CottonWeaver.configs
-                        .get(CottonWeaver.currentConfig).get("flightSpeed")));
+                if (!client.player.abilities.flying) {
+                    client.player.abilities.allowFlying = true;
+                    client.player.abilities.flying = true;
+                }
+                try {
+                    client.player.abilities.setFlySpeed(Float.parseFloat(CottonWeaver.configs
+                            .get(CottonWeaver.currentConfig).get("flightSpeed")));
+                } catch (NumberFormatException ignore) {}
+                break;
         }
-        canRun = true;
+        threadDead = true;
     }
 
     @Override
@@ -80,32 +88,26 @@ public class Fly implements Module {
     @Override
     public HashMap<String, ArrayList<String>> getSettings(Boolean values) {
         HashMap<String, ArrayList<String>> out = new HashMap<>();
-
         if (!values) {
-            ArrayList<String> flightModes = new ArrayList<>(Arrays.asList("JetPack", "WalkFly", "VanillaFly"));
-            out.put("flightMode", flightModes);
+            out.put("flightMode", new ArrayList<>(Arrays.asList("JetPack", "AirJump", "VanillaFly")));
             out.put("JetPackCooldown", new ArrayList<>());
             out.put("flightSpeed", new ArrayList<>());
         }
         else {
-            ArrayList<String> a = new ArrayList<>();
-            a.add("WalkFly");
-            ArrayList<String> b = new ArrayList<>();
-            b.add("150");
-            ArrayList<String> c = new ArrayList<>();
-            c.add("0.5");
-
-            out.put("flightMode", a);
-            out.put("JetPackCooldown", b);
-            out.put("flightSpeed", c);
+            out.put("flightMode", new ArrayList<>(Collections.singletonList("WalkFly")));
+            out.put("JetPackCooldown", new ArrayList<>(Collections.singletonList("150")));
+            out.put("flightSpeed", new ArrayList<>(Collections.singletonList("0.5")));
         }
-
         return out;
+    }
 
-
-
-
-
+    @Override
+    public ArrayList<String> getInfo() {
+        return new ArrayList<>(Arrays.asList("Fly:",
+                "JetPack: Boosts you upwards",
+                "AirJump: Allows jumping on thin air",
+                "VanillaFly: Creative fly",
+                "Author: UltraBlackLinux"));
     }
 
 }

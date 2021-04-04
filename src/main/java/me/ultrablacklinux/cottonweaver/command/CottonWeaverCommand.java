@@ -40,6 +40,7 @@ public class CottonWeaverCommand {
         };
 
         SuggestionProvider<FabricClientCommandSource> value = (ctx, builder) -> {
+            builder.suggest("reset");
             CottonWeaver.modules.forEach((k, v) -> {
                 HashMap<String, ArrayList<String>> out = (HashMap<String, ArrayList<String>>) Util
                         .moduleRunner(k, "getSettings", Boolean.class, false);
@@ -80,7 +81,7 @@ public class CottonWeaverCommand {
 
 
 
-        ClientCommandManager.DISPATCHER.register(literal("cottonweaver")
+        DISPATCHER.register(literal("cottonweaver")
                 .then(literal("help").then(RequiredArgumentBuilder.<FabricClientCommandSource, String>
                         argument("Option", StringArgumentType.string()).suggests(help)
                         .executes(ctx -> {
@@ -149,7 +150,7 @@ public class CottonWeaverCommand {
                                                 prefix + "Cannot delete \"default\" config!"), false);
                                     }
                                     else {
-                                        CottonWeaver.autoModules.removeIf(c -> c.containsKey(Util.getCurrentConfigName()));
+                                        CottonWeaver.autoModules.removeIf(c -> c.containsKey(Util.getCurrentConfigEntry("Name")));
                                         CottonWeaver.configs.removeIf(c -> c.containsValue(configName));
                                         client.player.sendMessage(Text.of(prefix + "Config deleted!"),
                                                 false);
@@ -226,8 +227,15 @@ public class CottonWeaverCommand {
                                             String argSetting = ctx.getArgument("Setting", String.class);
                                             String argValue = ctx.getArgument("Value", String.class);
 
-                                            CottonWeaver.configs.get(CottonWeaver.currentConfig)
-                                                    .replace(argSetting, argValue);
+                                            if (argValue.equals("reset")) {
+                                                CottonWeaver.configs.get(CottonWeaver.currentConfig)
+                                                        .replace(argSetting, Util.configReset("").get(argSetting));
+                                            }
+                                            else {
+                                                CottonWeaver.configs.get(CottonWeaver.currentConfig)
+                                                        .replace(argSetting, argValue);
+                                            }
+
                                             client.player.sendMessage(
                                                     Text.of(String.format(prefix + "Changed %s to %s", argSetting,
                                                             CottonWeaver.configs.get(CottonWeaver.currentConfig)
@@ -236,6 +244,22 @@ public class CottonWeaverCommand {
                                         })
                                     )
                             )
+                        )
+                        .then(literal("info")
+                                .then(RequiredArgumentBuilder.<FabricClientCommandSource, String>argument("Module",
+                                        StringArgumentType.string()).suggests(modules)
+                                        .executes(ctx -> {
+                                            ArrayList<String> a = (ArrayList<String>) Util.moduleRunner(
+                                                    Util.getClassOfName(ctx.getArgument("Module", String.class)),
+                                                    "getInfo", null, null);
+
+                                            a.forEach(info -> {
+                                                client.player.sendMessage(Text.of(prefix + info), false);
+                                            });
+
+                                            return 1;
+                                        })
+                                )
                         )
                 )
                 .then(literal("quickConfig")
@@ -249,9 +273,9 @@ public class CottonWeaverCommand {
                                                 if (v) activeModules.add(k.getSimpleName());
                                             });
                                             HashMap<String, ArrayList<String>> tmp = new HashMap<>();
-                                            tmp.put(Util.getCurrentConfigName(), activeModules);
+                                            tmp.put(Util.getCurrentConfigEntry("Name"), activeModules);
                                             CottonWeaver.autoModules.forEach(e -> e.forEach((k, v) -> {
-                                                if (k.equals(Util.getCurrentConfigName())) {
+                                                if (k.equals(Util.getCurrentConfigEntry("Name"))) {
                                                     CottonWeaver.autoModules.add(e);
                                                 }
                                             }));
@@ -261,14 +285,14 @@ public class CottonWeaverCommand {
                                             break;
 
                                         case "delete":
-                                            CottonWeaver.autoModules.removeIf(c -> c.containsKey(Util.getCurrentConfigName()));
+                                            CottonWeaver.autoModules.removeIf(c -> c.containsKey(Util.getCurrentConfigEntry("Name")));
                                             client.player.sendMessage(Text.of(
                                                     prefix + "Quickconfig deleted!"), false);
                                             break;
 
                                         case "load":
                                             CottonWeaver.autoModules.forEach(e -> e.forEach((k, v) -> {
-                                                if (k.equals(Util.getCurrentConfigName())) {
+                                                if (k.equals(Util.getCurrentConfigEntry("Name"))) {
                                                     CottonWeaver.moduleManualOverride.addAll(v);
                                                     client.player.sendMessage(Text.of(prefix + "Quickconfig loaded!"),
                                                             false);
@@ -280,7 +304,7 @@ public class CottonWeaverCommand {
                                             client.player.sendMessage(Text.of(prefix + "Quickconfig unloaded!"),
                                                     false);
                                             CottonWeaver.autoModules.forEach(e -> e.forEach((k, v) -> {
-                                                if (k.equals(Util.getCurrentConfigName())) {
+                                                if (k.equals(Util.getCurrentConfigEntry("Name"))) {
                                                     CottonWeaver.moduleManualOverride.removeAll(v);
                                                 }
                                             }));

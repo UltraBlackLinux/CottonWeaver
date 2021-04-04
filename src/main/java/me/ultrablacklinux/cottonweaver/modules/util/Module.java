@@ -12,4 +12,5 @@ public interface Module {
     public void run();
     public boolean isActive();
     public HashMap<String, ArrayList<String>> getSettings(Boolean values);
+    public ArrayList<String> getInfo();
 }

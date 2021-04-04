@@ -8,8 +8,13 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.options.KeyBinding;
 import net.minecraft.client.options.StickyKeyBinding;
 import net.minecraft.client.util.InputUtil;
+import net.minecraft.item.BucketItem;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.registry.Registry;
 import org.jetbrains.annotations.Nullable;
 
 import static me.ultrablacklinux.cottonweaver.CottonWeaver.modules;
@@ -72,6 +77,10 @@ public class Util {
         }
     }
 
+    public static Class<?> getClassOfName(String name) {
+        return modules.keySet().stream().filter(k -> k.getSimpleName().equals(name)).findFirst().get();
+    }
+
 
     public static HashMap<String, String> configReset(String name) {
         HashMap<String, String> out = new HashMap<>();
@@ -112,18 +121,38 @@ public class Util {
         return -1;
     }
 
-    public static String getCurrentConfigName() {
-        return CottonWeaver.configs.get(CottonWeaver.currentConfig).get("Name");
+    public static String getCurrentConfigEntry(String key) {
+        return CottonWeaver.configs.get(CottonWeaver.currentConfig).get(key);
     }
 
-    public static int getHotbarItemIndex(ItemStack stack) {
+    public static void centerPlayerOnBlock() {
+        double x = client.player.getPos().x;
+        double z = client.player.getPos().z;
+
+        double newX = Math.floor(x);
+        double newZ = Math.floor(z);
+
+        for (int i = 0; i < 2; i++) {
+            newX += .25;
+            newZ += .25;
+            PlayerMoveC2SPacket packet = new PlayerMoveC2SPacket(client.player.isOnGround());
+            packet.getX(newX);
+            packet.getZ(newZ);
+
+            client.player.networkHandler.sendPacket(packet);
+            client.player.setPos(newX, client.player.getPos().y, newZ);
+        }
+    }
+
+    public static int getHotbarItemIndex(String item) {
         List<ItemStack> inv = client.player.inventory.main.subList(0, 9);
-        if (inv.contains(stack)) {
-            return inv.indexOf(stack);
+        int index = -1;
+        for (ItemStack i : inv) {
+            if (i.getItem().getTranslationKey().equals(item)) {
+                index = inv.indexOf(i);
+            }
         }
-        else {
-            return -1;
-        }
+        return index;
     }
 
     public static void hotbarScrollToIndex(int toSlot) {
